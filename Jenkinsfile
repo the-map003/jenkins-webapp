@@ -28,9 +28,9 @@ pipeline {
         }
         stage('Deploy to Local Docker Host') {
             steps {
-                sh '''
-                    docker rm -f my-web-app || true
-                    docker run -d --name my-web-app -p 8081:3000 ${DOCKER_IMAGE}:latest
+                bat '''
+                    docker rm -f my-web-app || exit /b 0
+                    docker run -d --name my-web-app -p 8081:3000 %DOCKER_IMAGE%:latest
                 '''
             }
         }
