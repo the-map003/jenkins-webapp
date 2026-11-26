@@ -1,27 +1,37 @@
 pipeline {
     agent any
+    environment {
+        DOCKER_IMAGE = 'themap003/my-web-app'
+        DOCKER_CREDENTIALS_ID = 'docker-hub-credentials'
+    }
     stages {
-        stage('Clone') {
+        stage('Checkout') {
             steps {
-                echo "Source code checked out from Git."
+                checkout scm
             }
         }
-        stage('Install') {
+        stage('Build Docker Image') {
             steps {
-                echo "Installing dependencies..."
-                bat 'npm install'
+                script {
+                    dockerImage = docker.build("${DOCKER_IMAGE}:latest")
+                }
             }
         }
-        stage('Test') {
+        stage('Push to Docker Hub') {
             steps {
-                echo "Running automated tests..."
-                bat 'npm test'
+                script {
+                    docker.withRegistry('https://index.docker.io/v1/', DOCKER_CREDENTIALS_ID) {
+                        dockerImage.push('latest')
+                    }
+                }
             }
         }
-        stage('Build') {
+        stage('Deploy to Local Docker Host') {
             steps {
-                echo "Building the web application..."
-                bat 'dir'
+                sh '''
+                    docker rm -f my-web-app || true
+                    docker run -d --name my-web-app -p 8081:3000 ${DOCKER_IMAGE}:latest
+                '''
             }
         }
     }
